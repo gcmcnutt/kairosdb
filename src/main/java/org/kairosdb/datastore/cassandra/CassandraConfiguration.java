@@ -50,6 +50,8 @@ public class CassandraConfiguration
 	public static final String MAX_QUEUE_SIZE = "kairosdb.datastore.cassandra.max_queue_size";
 	
 	public static final String LOCAL_DATACENTER = "kairosdb.datastore.cassandra.local_datacenter";
+	public static final String FORCE_CONNECTION = "kairosdb.datastore.cassandra.force_connection";
+
 
 	@Inject
 	@Named(WRITE_CONSISTENCY_LEVEL)
@@ -148,6 +150,10 @@ public class CassandraConfiguration
 	@Inject(optional = true)
 	@Named(LOCAL_DATACENTER)
 	private String m_localDatacenter;
+
+	@Inject(optional = true)
+	@Named(FORCE_CONNECTION)
+	private String m_forceConnection;
 
 	public CassandraConfiguration()
 	{
@@ -286,6 +292,11 @@ public class CassandraConfiguration
 	public String getLocalDatacenter()
 	{
 		return m_localDatacenter;
+	}
+
+	public String getForceConnection()
+	{
+		return m_forceConnection;
 	}
 
 	public int getQueryReaderThreads()

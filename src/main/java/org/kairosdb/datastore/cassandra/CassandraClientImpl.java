@@ -15,6 +15,7 @@ import com.datastax.driver.core.policies.ExponentialReconnectionPolicy;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.RoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
+import com.datastax.driver.core.policies.WhiteListPolicy;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.kairosdb.core.DataPointSet;
@@ -26,7 +27,9 @@ import org.kairosdb.core.reporting.KairosMetricReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -60,9 +63,17 @@ public class CassandraClientImpl implements CassandraClient, KairosMetricReporte
 	{
 		//Passing shuffleReplicas = false so we can properly batch data to
 		//instances.
+
+		// We can either: use RoundRobin, Localize to a DataCenter, or force Connection to a host:port
+
 		// When connecting to Cassandra notes in different datacenters, the local datacenter should be provided.
 		// Not doing this will select the datacenter from the first connected Cassandra node, which is not guaranteed to be the correct one.
-		m_loadBalancingPolicy = new TokenAwarePolicy((configuration.getLocalDatacenter() == null) ? new RoundRobinPolicy() : DCAwareRoundRobinPolicy.builder().withLocalDc(configuration.getLocalDatacenter()).build(), false);
+		if (configuration.getForceConnection() == null) {
+			m_loadBalancingPolicy = new TokenAwarePolicy((configuration.getLocalDatacenter() == null) ? new RoundRobinPolicy() : DCAwareRoundRobinPolicy.builder().withLocalDc(configuration.getLocalDatacenter()).build(), false);
+		} else {
+			String[] cfg = configuration.getForceConnection().split(":");
+			m_loadBalancingPolicy = new WhiteListPolicy(new RoundRobinPolicy(), Collections.singletonList(new InetSocketAddress(cfg[0], Integer.valueOf(cfg[1]))));
+		}
 		final Cluster.Builder builder = new Cluster.Builder()
 				//.withProtocolVersion(ProtocolVersion.V3)
 				.withPoolingOptions(new PoolingOptions().setConnectionsPerHost(HostDistance.LOCAL,
